@@ -219,14 +219,11 @@ export default function ThetaEdge() {
     for (const batch of batches) {
       const results = await fetchStocks(batch);
       allResults.push(...results);
-      // Update progressively so user sees stocks appearing
-      const valid = allResults.filter(s => s.price);
-      if (valid.length) {
-        const enriched = valid.map(s => ({ ...s, sig: calcSig(s), ps: putSp(s.price, otm, width, s.iv || 25, dte), ic: icSp(s.price, otm, width, s.iv || 25, dte) }));
-        setStocks(enriched);
-        if (!sel) { const a = enriched.find(s => s.ticker === exTk); if (a) setSel(a); }
-      }
     }
+    const valid = allResults.filter(s => s.price);
+    const enriched = valid.map(s => ({ ...s, sig: calcSig(s), ps: putSp(s.price, otm, width, s.iv || 25, dte), ic: icSp(s.price, otm, width, s.iv || 25, dte) }));
+    setStocks(enriched);
+    if (!sel) { const a = enriched.find(s => s.ticker === exTk); if (a) setSel(a); }
     setLoading(false);
   }, [fetchStocks, otm, width, dte, exTk]);
 
@@ -548,7 +545,7 @@ export default function ThetaEdge() {
             </div>
             <div style={{ display: "flex", gap: 5, marginBottom: 14, flexWrap: "wrap", maxHeight: 80, overflowY: "auto" }}>
               {(stocks.length ? stocks : TICKERS.map(t => ({ ticker: t }))).map(s => (
-                <button key={s.ticker} onClick={() => { if (stocks.length) { const st = stocks.find(x => x.ticker === s.ticker); if (st) { setSel(st); setExTk(st.ticker); analyze(st.ticker); } } }} style={{ background: research[s.ticker] ? "#22c55e10" : sel?.ticker === s.ticker ? `${AC}15` : "transparent", border: `1px solid ${research[s.ticker] ? "#22c55e40" : sel?.ticker === s.ticker ? `${AC}40` : BD}`, color: TX, padding: "5px 12px", borderRadius: 5, cursor: "pointer", fontSize: 13, fontWeight: 600, ...F }}>
+                <button key={s.ticker} onClick={() => { setExTk(s.ticker); if (stocks.length) { const st = stocks.find(x => x.ticker === s.ticker); if (st) setSel(st); } }} style={{ background: research[s.ticker] ? "#22c55e10" : (sel?.ticker === s.ticker || exTk === s.ticker) ? `${AC}15` : "transparent", border: `1px solid ${research[s.ticker] ? "#22c55e40" : (sel?.ticker === s.ticker || exTk === s.ticker) ? `${AC}40` : BD}`, color: TX, padding: "5px 12px", borderRadius: 5, cursor: "pointer", fontSize: 13, fontWeight: 600, ...F }}>
                   {rLoad[s.ticker] && <span style={{ marginRight: 4 }}>⟳</span>}
                   {s.ticker}
                   {research[s.ticker] && <span style={{ color: "#22c55e", marginLeft: 4 }}>✓</span>}
@@ -646,7 +643,7 @@ export default function ThetaEdge() {
                   <button onClick={() => analyze(curTk)} style={{ background: AC, color: "#fff", border: "none", padding: "8px 20px", borderRadius: 5, cursor: "pointer", fontSize: 14, fontWeight: 600, ...F }}>⚡ Retry</button>
                 </div>
               ) : (
-                <div style={{ padding: 60, textAlign: "center", color: MU }}>Select an example or click ⚡ Analyze on any stock</div>
+                <div style={{ padding: 60, textAlign: "center", color: MU }}><div style={{ fontSize: 16, fontWeight: 600, color: TX, marginBottom: 8 }}>No research for {curTk} yet</div><div>Click <b style={{ color: AC }}>⚡ Run LIVE Analysis</b> above to generate a Gemini trade pitch</div></div>
               )}
             </div>
           </div>

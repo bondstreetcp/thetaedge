@@ -44,16 +44,73 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+// ===== AD / SPAM FILTERS =====
+const AD_TITLE_PATTERNS = [
+  /^ad:/i,
+  /sponsored/i,
+  /partner content/i,
+  /advertis(ement|ing|er)/i,
+  /promoted/i,
+  /\bpick(s)?\b.*\bstock(s)?\b/i,
+  /\bbest\s+(stock|etf|fund)s?\s+to\s+buy/i,
+  /\bmotley\s+fool/i,
+  /\bzacks\b.*\b(rank|buy|strong buy)\b/i,
+  /unlock\b.*\bpremium/i,
+  /sign\s+up\s+(now|today|free)/i,
+  /\bsubscribe\b.*\b(now|today|newsletter)/i,
+  /\bjoin\s+(now|today|free)/i,
+  /\bfree\s+report/i,
+  /\b(top|best)\s+\d+\s+(stock|pick|investment)/i,
+  /\byou\s+won'?t\s+believe/i,
+  /\bsecret\b.*\bstock/i,
+  /\bone\s+stock\b.*\byou\s+need/i,
+  /\bbargain\s+stock/i,
+  /\b(buy|sell)\s+alert/i,
+  /\bmarket\s+newsletter/i,
+];
+const AD_SUMMARY_PATTERNS = [
+  /click\s+here/i,
+  /sign\s+up/i,
+  /limited\s+time/i,
+  /free\s+trial/i,
+  /exclusive\s+offer/i,
+  /subscribe\s+(now|today)/i,
+  /unlock\s+(full|premium)/i,
+];
+
+function isAdContent(article) {
+  const title = article.headline || "";
+  const summary = article.summary || "";
+  const source = (article.source || "").toLowerCase();
+
+  // Filter known ad sources
+  if (source.includes("partner content") || source.includes("sponsored")) return true;
+
+  // Filter by headline patterns
+  if (AD_TITLE_PATTERNS.some(rx => rx.test(title))) return true;
+
+  // Filter by summary patterns
+  if (AD_SUMMARY_PATTERNS.some(rx => rx.test(summary))) return true;
+
+  // Must have a real headline (not empty or very short clickbait)
+  if (title.length < 15) return true;
+
+  return false;
+}
+
 async function getMarketNews() {
   const data = await fhFetch("/news", { category: "general", minId: 0 });
   if (!Array.isArray(data)) return [];
-  return data.slice(0, 15).map(a => ({
-    id: a.id, type: "market", category: a.category || "general",
-    title: a.headline, summary: (a.summary || "").slice(0, 200),
-    source: a.source, url: a.url, image: a.image,
-    time: new Date(a.datetime * 1000).toISOString(),
-    timeAgo: timeAgo(a.datetime * 1000), ticker: null,
-  }));
+  return data
+    .filter(a => !isAdContent(a))
+    .slice(0, 15)
+    .map(a => ({
+      id: a.id, type: "market", category: a.category || "general",
+      title: a.headline, summary: (a.summary || "").slice(0, 200),
+      source: a.source, url: a.url, image: a.image,
+      time: new Date(a.datetime * 1000).toISOString(),
+      timeAgo: timeAgo(a.datetime * 1000), ticker: null,
+    }));
 }
 
 async function getCompanyNews(tickers) {
@@ -65,13 +122,16 @@ async function getCompanyNews(tickers) {
   const promises = toFetch.map(ticker =>
     fhFetch("/company-news", { symbol: ticker, from, to: today }).then(data => {
       if (!Array.isArray(data)) return;
-      data.slice(0, 3).forEach(a => results.push({
-        id: a.id, type: "company", category: "company news",
-        title: a.headline, summary: (a.summary || "").slice(0, 200),
-        source: a.source, url: a.url, image: a.image,
-        time: new Date(a.datetime * 1000).toISOString(),
-        timeAgo: timeAgo(a.datetime * 1000), ticker,
-      }));
+      data
+        .filter(a => !isAdContent(a))
+        .slice(0, 3)
+        .forEach(a => results.push({
+          id: a.id, type: "company", category: "company news",
+          title: a.headline, summary: (a.summary || "").slice(0, 200),
+          source: a.source, url: a.url, image: a.image,
+          time: new Date(a.datetime * 1000).toISOString(),
+          timeAgo: timeAgo(a.datetime * 1000), ticker,
+        }));
     })
   );
   await Promise.all(promises);
@@ -124,7 +184,6 @@ async function getMovers() {
 }
 
 // Cache the entire news response for 5 minutes
-// Movers use Yahoo quotes which are the bottleneck
 const NEWS_TTL = 300;
 
 export async function GET() {
@@ -156,7 +215,6 @@ export async function GET() {
     cache: cacheStatus(),
   };
 
-  // Fire-and-forget cache write
   cacheSet("news:full", result, NEWS_TTL).catch(() => {});
 
   return Response.json(result);
