@@ -1,0 +1,22 @@
+{
+  "functions": {
+    "app/api/research/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/stocks/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/news/route.js": {
+      "maxDuration": 45
+    },
+    "app/api/history/route.js": {
+      "maxDuration": 15
+    },
+    "app/api/earnings/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/earnings/audio/route.js": {
+      "maxDuration": 30
+    }
+  }
+}
