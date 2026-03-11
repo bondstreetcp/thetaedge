@@ -1,5 +1,7 @@
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { cacheFetch } from "../../../lib/cache";
+
+const yahooFinance = new YahooFinance();
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;

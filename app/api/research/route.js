@@ -69,9 +69,9 @@ Verdicts: STRONG SELL, SELL, NEUTRAL, AVOID, STRONG AVOID (separate for put spre
   try {
     let result;
     // Best model first, graceful fallback chain
-    // 20s per-model timeout ensures one hanging model can't exhaust the 60s function limit
-    const MODELS = ["gemini-3.0-pro-preview", "gemini-2.5-pro-preview-05-06", "gemini-2.0-pro", "gemini-2.0-flash"];
-    const MODEL_TIMEOUT = 20000; // 20 seconds per model attempt
+    // 15s per-model timeout ensures we can try all models within the 60s function limit
+    const MODELS = ["gemini-3.1-pro-preview", "gemini-2.5-pro-preview-05-06", "gemini-2.0-flash"];
+    const MODEL_TIMEOUT = 15000; // 15 seconds per model attempt
 
     for (const modelName of MODELS) {
       try {

@@ -1,7 +1,7 @@
 import { cacheGet, cacheSet, cacheStatus } from "../../../../lib/cache";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+export const maxDuration = 30;
 
 /**
  * Earnings Call YouTube Resolver
